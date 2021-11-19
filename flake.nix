@@ -15,21 +15,19 @@
           # Overrides go here
         };
 
-        app = pkgs.poetry2nix.mkPoetryApplication {
-          projectDir = ./.;
-          overrides =
-            [ pkgs.poetry2nix.defaultPoetryOverrides customOverrides ];
-        };
 
-        packageName = throw "MomentReconstruction";
+        packageName = "MomentReconstruction";
       in {
-        packages.${packageName} = app;
+#        packages.${packageName} = app;
 
-        defaultPackage = self.packages.${system}.${packageName};
+#        defaultPackage = self.packages.${system}.${packageName};
 
         devShell = pkgs.mkShell {
-          buildInputs = with pkgs; [ poetry ];
-          inputsFrom = builtins.attrValues self.packages.${system};
+          buildInputs = with pkgs; [ 
+              python3
+              python3Packages.scikitimage
+          ];
+#          inputsFrom = builtins.attrValues self.packages.${system};
         };
       });
 }
