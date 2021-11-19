@@ -21,7 +21,7 @@
             [ pkgs.poetry2nix.defaultPoetryOverrides customOverrides ];
         };
 
-        packageName = throw "Moment-Reconstruction";
+        packageName = throw "MomentReconstruction";
       in {
         packages.${packageName} = app;
 
