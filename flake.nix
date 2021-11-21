@@ -26,6 +26,7 @@
           buildInputs = with pkgs; [ 
               python3
               python3Packages.scikitimage
+              python3Packages.scipy
           ];
 #          inputsFrom = builtins.attrValues self.packages.${system};
         };
