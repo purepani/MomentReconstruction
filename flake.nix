@@ -27,6 +27,8 @@
               python3
               python3Packages.scikitimage
               python3Packages.scipy
+              python3Packages.sympy
+              pkgs.nodePackages.pyright
           ];
 #          inputsFrom = builtins.attrValues self.packages.${system};
         };

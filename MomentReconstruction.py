@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.special
 
 from skimage.data import shepp_logan_phantom
 from skimage.transform import radon, rescale, iradon
@@ -7,6 +8,8 @@ from skimage.transform import radon, rescale, iradon
 def xy(X,Y):
     return X*Y
 
+def phi(x):
+    return np.exp(-(1/(1-x**2)))
 def generateMoment(f, n):
     sum = 0
     for i in range(f.shape):
@@ -17,9 +20,23 @@ def generate2DMoment(f, n1, n2):
     sum = generateMoment(generateMoment(f, n1),n2)
     return sum
 
+def C(k, j):
+    return scipy.special.binom(k,j)
+
+
+def b(k, theta, f):
+    sum=0
+    for j in range(k+1):
+        sum = sum + C(k, j)*(np.cos(theta))**j * (np.sin(theta))**(k-j)* generate2DMoment(f, j, k-j)
+    return sum
+def c(j):
+    
+
+
+
+
 f = shepp_logan_phantom()   
 
-:w
 
 print(max(f.shape))
 n = max(f.shape)
