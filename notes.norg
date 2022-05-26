@@ -1,0 +1,9 @@
+* Ideas
+** what does the mojette transform actually do compared to a simple discretization of the radon transform
+   - makes clear where the information for each pixel is coming from
+   - since we can minimize information redundancy, we can design our system to make better use of spreading
+** can we add scattering effects such as compton and/or photoelectric effect into this model
+   - This has been done previously for the continuous radon transform, so perhaps it will improve imaging attempts if we incorporate these scattering effects into the Mojette transform
+** can we add cone beam geometry into this model
+   - again, allows for less interpolation, so perhaps this can be used to better estimate the image
+

@@ -9,6 +9,141 @@ import sparse
 import time
 
 
+def getitem(x, index):
+    """
+    This function implements the indexing functionality for COO.
+    The overall algorithm has three steps:
+    1. Normalize the index to canonical form. Function: normalize_index
+    2. Get the mask, which is a list of integers corresponding to
+       the indices in coords/data for the output data. Function: _mask
+    3. Transform the coordinates to what they will be in the output.
+    Parameters
+    ----------
+    x : COO
+        The array to apply the indexing operation on.
+    index : {tuple, str}
+        The index into the array.
+    """
+    from .core import COO
+
+    # If string, this is an index into an np.void
+
+    # Custom dtype.
+    if isinstance(index, str):
+        data = x.data[index]
+        idx = np.where(data)
+        data = data[idx].flatten()
+        coords = list(x.coords[:, idx[0]])
+        coords.extend(idx[1:])
+
+        fill_value_idx = np.asarray(x.fill_value[index]).flatten()
+        fill_value = (
+            fill_value_idx[0] if fill_value_idx.size else _zero_of_dtype(data.dtype)[()]
+        )
+
+        if not equivalent(fill_value, fill_value_idx).all():
+            raise ValueError("Fill-values in the array are inconsistent.")
+
+        return COO(
+            coords,
+            data,
+            shape=x.shape + x.data.dtype[index].shape,
+            has_duplicates=False,
+            sorted=True,
+            fill_value=fill_value,
+        )
+
+    # Otherwise, convert into a tuple.
+    if not isinstance(index, tuple):
+        index = (index,)
+
+    # Check if the last index is an ellipsis.
+    last_ellipsis = len(index) > 0 and index[-1] is Ellipsis
+
+    # Normalize the index into canonical form.
+    index = normalize_index(index, x.shape)
+
+    # zip_longest so things like x[..., None] are picked up.
+    if len(index) != 0 and all(
+        isinstance(ind, slice) and ind == slice(0, dim, 1)
+        for ind, dim in zip_longest(index, x.shape)
+    ):
+        return x
+
+    # Get the mask
+    mask, adv_idx = _mask(x.coords, index, x.shape)
+
+    # Get the length of the mask
+    if isinstance(mask, slice):
+        n = len(range(mask.start, mask.stop, mask.step))
+    else:
+        n = len(mask)
+
+    coords = []
+    shape = []
+    i = 0
+
+    sorted = adv_idx is None or adv_idx.pos == 0
+    adv_idx_added = False
+    for ind in index:
+        # Nothing is added to shape or coords if the index is an integer.
+        if isinstance(ind, Integral):
+            i += 1
+            continue
+        # Add to the shape and transform the coords in the case of a slice.
+        elif isinstance(ind, slice):
+            shape.append(len(range(ind.start, ind.stop, ind.step)))
+            coords.append((x.coords[i, mask] - ind.start) // ind.step)
+            i += 1
+            if ind.step < 0:
+                sorted = False
+        # Add the index and shape for the advanced index.
+        elif isinstance(ind, np.ndarray):
+            if not adv_idx_added:
+                shape.append(adv_idx.length)
+                coords.append(adv_idx.idx)
+                adv_idx_added = True
+            i += 1
+        # Add a dimension for None.
+        elif ind is None:
+            coords.append(np.zeros(n, dtype=np.intp))
+            shape.append(1)
+
+    # Join all the transformed coords.
+    if coords:
+        coords = np.stack(coords, axis=0)
+    else:
+        # If index result is a scalar, return a 0-d COO or
+        # a scalar depending on whether the last index is an ellipsis.
+        if last_ellipsis:
+            coords = np.empty((0, n), dtype=np.uint8)
+        else:
+            if n != 0:
+                return x.data[mask][0]
+            else:
+                return x.fill_value
+
+    shape = tuple(shape)
+    data = x.data[mask]
+
+    return COO(
+        coords,
+        data,
+        shape=shape,
+        has_duplicates=False,
+        sorted=sorted,
+        fill_value=x.fill_value,
+    )
+
+
+class BlockToeplitzBlock:
+    def __init__(self, N, data):
+        self.N=N
+        self.data = data
+
+
+
+
 class Mojette(linalg.LinearOperator):
 
     def get_Bin_Size(self):
